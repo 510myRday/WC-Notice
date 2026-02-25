@@ -5,6 +5,7 @@ mod config;
 mod engine;
 mod notifier;
 mod schedule;
+mod tray;
 
 use std::sync::Arc;
 
@@ -16,18 +17,59 @@ fn main() -> eframe::Result {
 
     log::info!("WC Notice 启动中...");
 
-    // 加载时间表配置
-    let schedule = config::load_schedule();
-    log::info!("已加载时间表: {}", schedule.name);
+    // 加载应用配置
+    let config = config::load_config();
+    log::info!("已加载配置，时间表数量: {}", config.schedules.len());
 
     // 创建引擎并启动后台检测线程
-    let engine = Arc::new(Engine::new(schedule.clone()));
+    let engine = Arc::new(Engine::new(config.clone()));
     engine.start();
+
+    // 在专用线程中创建托盘图标并运行 Win32 消息泵。
+    // tray-icon 要求：托盘图标必须在与 Win32 消息泵相同的线程上创建。
+    // eframe/winit 只泵送自己管理的窗口消息，不会泵送 tray-icon 隐藏 HWND 的消息，
+    // 因此必须在独立线程中运行 GetMessage/DispatchMessage 循环。
+    //
+    // 方案：new_split() 返回 (TrayHandle, TrayThreadState)：
+    //   - TrayHandle 只含 Arc 字段（Send），传回主线程使用
+    //   - TrayThreadState 移入专用线程，完成托盘初始化并运行消息泵
+    let mut tray = {
+        // 使用 SyncSender（容量=1），托盘线程在初始化完成后立即发送结果，
+        // 然后继续运行消息泵。主线程收到信号后即可继续启动 eframe，不再阻塞。
+        let (init_tx, init_rx) = std::sync::mpsc::sync_channel::<bool>(1);
+
+        let (handle, thread_state) =
+            tray::TrayHandle::new_split(include_bytes!("../assets/icon.png"), init_tx);
+
+        std::thread::Builder::new()
+            .name("tray-msg-pump".to_string())
+            .spawn(move || {
+                // run() 内部：初始化托盘 → 立即通过 init_tx 通知主线程 → 运行消息泵
+                thread_state.run();
+            })
+            .expect("无法创建托盘消息泵线程");
+
+        // 等待托盘线程完成初始化（init_tx 在初始化后立即发送，不等消息泵退出）
+        match init_rx.recv() {
+            Ok(true) => {
+                log::info!("托盘功能已启用");
+                Some(handle)
+            }
+            Ok(false) => {
+                log::warn!("托盘初始化失败，将不启用托盘功能");
+                None
+            }
+            Err(_) => {
+                log::warn!("托盘线程异常退出，将不启用托盘功能");
+                None
+            }
+        }
+    };
 
     // 启动 egui GUI
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("🔔 WC Notice - 作息提醒")
+            .with_title("WC Notice - 作息提醒")
             .with_inner_size([780.0, 520.0])
             .with_min_inner_size([600.0, 400.0])
             .with_icon(load_app_icon()),
@@ -40,7 +82,11 @@ fn main() -> eframe::Result {
         Box::new(move |cc| {
             // 加载中文字体，解决 Windows/macOS 中文乱码问题
             setup_chinese_font(&cc.egui_ctx);
-            Ok(Box::new(WcNoticeApp::new(Arc::clone(&engine), schedule)))
+            Ok(Box::new(WcNoticeApp::new(
+                Arc::clone(&engine),
+                config,
+                tray.take(),
+            )))
         }),
     )
 }

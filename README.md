@@ -1,104 +1,80 @@
-# WC Notice 🔔
+# WC Notice
 
-程序员专用「学校作息铃声」桌面提醒工具（Rust）。
+轻量的桌面作息提醒工具（Rust + egui），支持多时间表、桌面通知、铃声与系统托盘。
 
-- 按系统时间触发提醒
-- 支持上课/下课/课间操/午休/晚自习等节点
-- 桌面通知 + 响铃
-- 支持 Windows / macOS / Linux
+## 特性
 
-## 功能
+- 按系统时间触发提醒（后台每秒检查，按分钟命中）
+- 桌面通知 + 音效播放
+- 多时间表管理：新建、切换、重命名、删除
+- 节点管理：`开始` / `结束` 两类节点，可启停、排序、编辑、删除
+- 每个时间表独立音效槽位：`开始音效`、`结束音效`
+- 音效来源可选：内置音效或本地文件（`mp3` / `wav`）
+- 本地音效读取/解码失败时自动回退默认内置音效
+- 支持系统托盘：最小化到托盘、托盘恢复窗口、托盘菜单退出
+- 关闭窗口时二次确认（可选择“最小化到托盘”或“退出程序”）
+- 配置自动持久化（防抖写盘）
 
-- 内置默认高中作息（可编辑）
-- 每秒检测时间，分钟级触发
-- 防重复触发（同一分钟只提醒一次）
-- 本地配置持久化（`schedule.toml`）
-- 自动加载系统中文字体，界面无乱码
-
-## 技术栈
-
-- GUI: `egui` + `eframe`
-- 时间: `chrono`
-- 音频: `rodio`
-- 通知: `notify-rust`
-- 配置: `serde` + `toml`
-
-## 本地运行
+## 运行
 
 ```bash
 cargo run
 ```
 
-## 平台依赖
+## 使用说明
 
-### Windows
+- 顶部栏可查看当前状态、下一节点倒计时，并进行暂停/恢复提醒
+- `📋`：切换或重命名当前时间表
+- `➕`：新建空时间表
+- `🔔`：配置当前时间表的开始/结束音效
+- 主区域 `+`：添加节点（时间格式 `HH:MM`）
+- 关闭窗口时可选择最小化到托盘，提醒会继续运行
 
-无需额外安装依赖。中文界面自动使用系统微软雅黑字体。
+## 资源文件（必须存在）
 
-### macOS
+- `assets/icon.png`
+- `assets/bell_start.mp3`
+- `assets/bell_end.mp3`
+- `assets/bell_other.mp3`
 
-无需额外安装依赖。中文界面自动使用系统苹方字体。
+## 配置文件
 
-> macOS 需要在"系统偏好设置 → 通知"中允许应用发送通知。
+默认保存为单文件 `schedule.toml`：
 
-### Linux (Ubuntu / Debian)
+- Windows: `%APPDATA%\wc_notice\schedule.toml`
+- macOS: `~/Library/Application Support/wc_notice/schedule.toml`
+- Linux: `~/.config/wc_notice/schedule.toml`
+
+配置顶层结构：
+
+- `active_schedule_id: Option<u64>`
+- `next_schedule_id: u64`
+- `schedules: Vec<ScheduleProfile>`
+
+`ScheduleProfile` 包含：
+
+- `id`
+- `name`
+- `periods`（每个节点：`time` / `kind(Start|End)` / `name` / `enabled`）
+- `sound`（`start` / `end`，支持 `Builtin(BellStart|BellEnd|Fun)` 或 `Local { path }`）
+
+## 平台支持与依赖
+
+支持 Windows / macOS / Linux（含托盘功能）。托盘初始化失败时，程序会继续运行（仅不启用托盘）。
+
+Windows 与 macOS 一般无需额外依赖；Linux（Ubuntu / Debian）建议先安装：
 
 ```bash
 sudo apt update
 sudo apt install -y \
   libasound2-dev pkg-config libdbus-1-dev \
   libxkbcommon-dev libwayland-dev libx11-dev \
-  libgtk-3-dev libglib2.0-dev libappindicator3-dev
+  libgtk-3-dev libglib2.0-dev libappindicator3-dev \
+  libxrandr-dev libxi-dev libxcursor-dev
 ```
 
-> 桌面通知依赖系统通知服务（DBus）。
-> 中文界面自动查找 Noto Sans CJK 或 WenQuanYi 字体，建议安装：
-> ```bash
-> sudo apt install -y fonts-noto-cjk
-> ```
-
-## 资源文件
-
-当前 `assets/` 下为占位文件，请自行替换：
-
-- `assets/icon.png`
-- `assets/bell_start.wav`
-- `assets/bell_end.wav`
-- `assets/bell_exercise.wav`
-- `assets/bell_lunch.wav`
-
-## 配置文件位置
-
-- Windows: `%APPDATA%\wc_notice\schedule.toml`
-- macOS:   `~/Library/Application Support/wc_notice/schedule.toml`
-- Linux:   `~/.config/wc_notice/schedule.toml`
-
-## 开源与发布
+## 开源信息
 
 - License: MIT
 - CI: `.github/workflows/ci.yml`
-- Release 自动构建: `.github/workflows/release.yml`
-
-### 发布步骤（自动上传 Release 资产）
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-GitHub Actions 会自动构建：
-
-- `wc_notice-x86_64-pc-windows-msvc.zip`        ← Windows x86_64
-- `wc_notice-x86_64-unknown-linux-gnu.tar.gz`   ← Linux x86_64
-- `wc_notice-aarch64-unknown-linux-gnu.tar.gz`  ← Linux ARM64（树莓派4/5、ARM 服务器）
-- `wc_notice-armv7-unknown-linux-gnueabihf.tar.gz` ← Linux ARMv7（树莓派2/3 32位）
-- `wc_notice-aarch64-apple-darwin.tar.gz`       ← macOS Apple Silicon（M1/M2/M3）
-- `wc_notice-x86_64-apple-darwin.tar.gz`        ← macOS Intel
-
-## 计划
-
-- [ ] 系统托盘（tray）
-- [ ] 多时间表模板
-- [ ] 铃声自定义
-- [ ] i18n（中英文界面）
-
+- Release: `.github/workflows/release.yml`
