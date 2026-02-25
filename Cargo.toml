@@ -1,0 +1,35 @@
+[package]
+name = "wc_notice"
+version = "0.1.0"
+edition = "2024"
+authors = ["Your Name <you@example.com>"]
+description = "程序员专用学校作息铃声提醒工具 - School Bell Reminder for Programmers"
+license = "MIT"
+repository = "https://github.com/yourname/wc_notice"
+readme = "README.md"
+keywords = ["bell", "reminder", "schedule", "tray", "desktop"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+eframe = { version = "0.31", features = ["default"] }
+egui = "0.31"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+rodio = { version = "0.20", default-features = false, features = ["wav", "mp3"] }
+notify-rust = "4"
+dirs = "6"
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1"
+tray-icon = "0.19"
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
