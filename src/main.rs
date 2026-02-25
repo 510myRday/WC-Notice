@@ -54,15 +54,15 @@ fn main() -> eframe::Result {
 fn setup_chinese_font(ctx: &egui::Context) {
     #[cfg(target_os = "windows")]
     let candidates: &[&str] = &[
-        r"C:\Windows\Fonts\msyh.ttc",    // 微软雅黑
+        r"C:\Windows\Fonts\msyh.ttc", // 微软雅黑
         r"C:\Windows\Fonts\msyhbd.ttc",
-        r"C:\Windows\Fonts\simsun.ttc",  // 宋体 fallback
+        r"C:\Windows\Fonts\simsun.ttc", // 宋体 fallback
     ];
 
     #[cfg(target_os = "macos")]
     let candidates: &[&str] = &[
-        "/System/Library/Fonts/PingFang.ttc",                        // 苹方
-        "/System/Library/Fonts/STHeiti Medium.ttc",                  // 华文黑体
+        "/System/Library/Fonts/PingFang.ttc",       // 苹方
+        "/System/Library/Fonts/STHeiti Medium.ttc", // 华文黑体
         "/System/Library/Fonts/Supplemental/Arial Unicode MS.ttf",
     ];
 
@@ -75,15 +75,15 @@ fn setup_chinese_font(ctx: &egui::Context) {
     ];
 
     // 找到第一个可读的字体文件
-    let font_data = candidates.iter().find_map(|path| {
-        match std::fs::read(path) {
+    let font_data = candidates
+        .iter()
+        .find_map(|path| match std::fs::read(path) {
             Ok(data) => {
                 log::info!("已加载系统中文字体: {}", path);
                 Some(data)
             }
             Err(_) => None,
-        }
-    });
+        });
 
     let Some(font_data) = font_data else {
         log::warn!("未找到系统中文字体，界面中文可能显示为方块");
