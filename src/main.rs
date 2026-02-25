@@ -52,34 +52,27 @@ fn main() -> eframe::Result {
 ///   macOS    → 苹方 (PingFang.ttc) → 华文黑体 (STHeiti Medium.ttc)
 ///   Linux    → Noto Sans CJK SC → WenQuanYi Micro Hei
 fn setup_chinese_font(ctx: &egui::Context) {
-    // 按平台列出候选字体路径
-    let candidates: &[&str] = {
-        #[cfg(target_os = "windows")]
-        {
-            &[
-                r"C:\Windows\Fonts\msyh.ttc",   // 微软雅黑
-                r"C:\Windows\Fonts\msyhbd.ttc",
-                r"C:\Windows\Fonts\simsun.ttc",  // 宋体 fallback
-            ]
-        }
-        #[cfg(target_os = "macos")]
-        {
-            &[
-                "/System/Library/Fonts/PingFang.ttc",               // 苹方
-                "/System/Library/Fonts/STHeiti Medium.ttc",         // 华文黑体
-                "/System/Library/Fonts/Supplemental/Arial Unicode MS.ttf",
-            ]
-        }
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-        {
-            &[
-                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-                "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
-                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
-                "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc",
-            ]
-        }
-    };
+    #[cfg(target_os = "windows")]
+    let candidates: &[&str] = &[
+        r"C:\Windows\Fonts\msyh.ttc",    // 微软雅黑
+        r"C:\Windows\Fonts\msyhbd.ttc",
+        r"C:\Windows\Fonts\simsun.ttc",  // 宋体 fallback
+    ];
+
+    #[cfg(target_os = "macos")]
+    let candidates: &[&str] = &[
+        "/System/Library/Fonts/PingFang.ttc",                        // 苹方
+        "/System/Library/Fonts/STHeiti Medium.ttc",                  // 华文黑体
+        "/System/Library/Fonts/Supplemental/Arial Unicode MS.ttf",
+    ];
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    let candidates: &[&str] = &[
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc",
+    ];
 
     // 找到第一个可读的字体文件
     let font_data = candidates.iter().find_map(|path| {

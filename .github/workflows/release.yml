@@ -47,7 +47,9 @@ jobs:
             use_cross: false
 
           # ── macOS Intel ──
-          - os: macos-13
+          # 在部分账号/区域里 macos-13 会报 "configuration not supported"
+          # 这里改为 macos-latest，并通过 target 产出 x86_64 二进制。
+          - os: macos-latest
             target: x86_64-apple-darwin
             archive_name: wc_notice-x86_64-apple-darwin.tar.gz
             use_cross: false
@@ -77,7 +79,7 @@ jobs:
       # ARM 交叉编译：安装 cross 工具（内部用 Docker 跑对应 sysroot）
       - name: Install cross (ARM cross-compile)
         if: matrix.use_cross == true
-        run: cargo install cross --git https://github.com/cross-rs/cross
+        run: cargo install cross --locked --version 0.2.5
 
       # 原生编译（x86_64 Linux / Windows / macOS）
       - name: Build release (native)
@@ -87,6 +89,8 @@ jobs:
       # 交叉编译（Linux ARM）
       - name: Build release (cross)
         if: matrix.use_cross == true
+        env:
+          PKG_CONFIG_ALLOW_CROSS: "1"
         run: cross build --release --target ${{ matrix.target }}
 
       # Linux / macOS 打包为 .tar.gz
@@ -132,4 +136,3 @@ jobs:
             release-assets/**/*.tar.gz
             release-assets/**/*.zip
           generate_release_notes: true
-
