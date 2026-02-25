@@ -22,7 +22,7 @@ dirs = "6"
 log = "0.4"
 env_logger = "0.11"
 anyhow = "1"
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "ico"] }
 rfd = "0.15"
 
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -32,6 +32,9 @@ winreg = "0.52"
 # tray-icon 在 Windows/Linux/macOS 上均支持托盘功能
 [target.'cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))'.dependencies]
 tray-icon = "0.21.3"
+
+[build-dependencies]
+winresource = "0.1"
 
 [profile.release]
 opt-level = 3

@@ -48,7 +48,7 @@ impl TrayHandle {
     /// `init_tx` 用于在托盘初始化完成后立即通知主线程（成功/失败），
     /// 通知发出后消息泵继续在托盘线程中运行，主线程不再阻塞。
     pub fn new_split(
-        icon_png_bytes: &'static [u8],
+        icon_bytes: &'static [u8],
         init_tx: std::sync::mpsc::SyncSender<bool>,
     ) -> (TrayHandle, TrayThreadState) {
         let signals = Arc::new(TraySignals::default());
@@ -60,7 +60,7 @@ impl TrayHandle {
         };
 
         let state = TrayThreadState {
-            icon_png_bytes,
+            icon_bytes,
             signals,
             repaint_ctx,
             init_tx,
@@ -89,7 +89,7 @@ impl TrayHandle {
 /// 此结构体是 `Send`（`Arc` 字段均为 `Send + Sync`，`&'static [u8]` 也是 `Send`），
 /// 可安全地移入 `std::thread::spawn` 闭包。
 pub struct TrayThreadState {
-    icon_png_bytes: &'static [u8],
+    icon_bytes: &'static [u8],
     signals: Arc<TraySignals>,
     repaint_ctx: Arc<Mutex<Option<egui::Context>>>,
     /// 初始化完成后立即通过此 channel 通知主线程，然后继续运行消息泵。
@@ -140,7 +140,7 @@ impl TrayThreadState {
         const EXIT_MENU_ID: &str = "wc_notice.tray.exit";
 
         let result: anyhow::Result<()> = (|| {
-            let image = image::load_from_memory(self.icon_png_bytes)
+            let image = image::load_from_memory(self.icon_bytes)
                 .context("读取托盘图标失败")?
                 .to_rgba8();
             let (width, height) = image.dimensions();
@@ -257,7 +257,7 @@ impl TrayThreadState {
         const EXIT_MENU_ID: &str = "wc_notice.tray.exit";
 
         let result: anyhow::Result<()> = (|| {
-            let image = image::load_from_memory(self.icon_png_bytes)
+            let image = image::load_from_memory(self.icon_bytes)
                 .context("读取托盘图标失败")?
                 .to_rgba8();
             let (width, height) = image.dimensions();

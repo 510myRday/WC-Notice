@@ -39,7 +39,7 @@ fn main() -> eframe::Result {
         let (init_tx, init_rx) = std::sync::mpsc::sync_channel::<bool>(1);
 
         let (handle, thread_state) =
-            tray::TrayHandle::new_split(include_bytes!("../assets/icon.png"), init_tx);
+            tray::TrayHandle::new_split(include_bytes!("../assets/icon.ico"), init_tx);
 
         std::thread::Builder::new()
             .name("tray-msg-pump".to_string())
@@ -157,9 +157,9 @@ fn setup_chinese_font(ctx: &egui::Context) {
     log::info!("中文字体注册完成");
 }
 
-/// 加载应用图标（内嵌 PNG）
+/// 加载应用图标（内嵌 ICO）
 fn load_app_icon() -> egui::IconData {
-    let icon_bytes = include_bytes!("../assets/icon.png");
+    let icon_bytes = include_bytes!("../assets/icon.ico");
     match image::load_from_memory(icon_bytes) {
         Ok(img) => {
             let rgba = img.to_rgba8();
