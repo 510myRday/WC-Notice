@@ -8,8 +8,8 @@ use std::time::{Duration, Instant};
 
 use crate::config::save_config;
 use crate::engine::Engine;
+use crate::schedule;
 use crate::schedule::{AppConfig, BuiltinSound, Period, PeriodKind, ScheduleProfile, SoundSource};
-use crate::schedule as schedule;
 use crate::tray::TrayHandle;
 
 const MIN_CONTENT_WIDTH: f32 = 720.0;
@@ -101,8 +101,8 @@ impl WcNoticeApp {
     fn apply_autostart(&self) {
         #[cfg(target_os = "windows")]
         {
-            use winreg::enums::*;
             use winreg::RegKey;
+            use winreg::enums::*;
             let hkcu = RegKey::predef(HKEY_CURRENT_USER);
             let run_key = hkcu
                 .open_subkey_with_flags(
@@ -216,9 +216,9 @@ impl WcNoticeApp {
     #[cfg(target_os = "windows")]
     fn hide_taskbar_button(&self) {
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            FindWindowW, GWL_EXSTYLE, GetWindowLongPtrW, HWND_NOTOPMOST, SetWindowLongPtrW,
-            SetWindowPos, SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER,
-            WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+            FindWindowW, GWL_EXSTYLE, GetWindowLongPtrW, HWND_NOTOPMOST, SWP_FRAMECHANGED,
+            SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetWindowLongPtrW, SetWindowPos, WS_EX_APPWINDOW,
+            WS_EX_TOOLWINDOW,
         };
         unsafe {
             // 窗口标题与 main.rs 中 with_title() 保持一致
@@ -229,14 +229,16 @@ impl WcNoticeApp {
             }
             let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
             // 移除 WS_EX_APPWINDOW，添加 WS_EX_TOOLWINDOW
-            let new_style =
-                (ex_style & !(WS_EX_APPWINDOW as isize)) | (WS_EX_TOOLWINDOW as isize);
+            let new_style = (ex_style & !(WS_EX_APPWINDOW as isize)) | (WS_EX_TOOLWINDOW as isize);
             SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_style);
             // SWP_FRAMECHANGED 通知系统刷新扩展样式；HWND_NOTOPMOST 确保不置顶
             SetWindowPos(
                 hwnd,
                 HWND_NOTOPMOST,
-                0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
             );
         }
@@ -249,9 +251,9 @@ impl WcNoticeApp {
     #[cfg(target_os = "windows")]
     fn show_taskbar_button(&self) {
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            FindWindowW, GWL_EXSTYLE, GetWindowLongPtrW, HWND_NOTOPMOST, SetForegroundWindow,
-            SetWindowLongPtrW, SetWindowPos, SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE,
-            SWP_NOZORDER, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+            FindWindowW, GWL_EXSTYLE, GetWindowLongPtrW, HWND_NOTOPMOST, SWP_FRAMECHANGED,
+            SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetForegroundWindow, SetWindowLongPtrW,
+            SetWindowPos, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
         };
         unsafe {
             let title: Vec<u16> = "WC Notice - 作息提醒\0".encode_utf16().collect();
@@ -260,14 +262,16 @@ impl WcNoticeApp {
                 return;
             }
             let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-            let new_style =
-                (ex_style & !(WS_EX_TOOLWINDOW as isize)) | (WS_EX_APPWINDOW as isize);
+            let new_style = (ex_style & !(WS_EX_TOOLWINDOW as isize)) | (WS_EX_APPWINDOW as isize);
             SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_style);
             // 刷新样式，确保不置顶
             SetWindowPos(
                 hwnd,
                 HWND_NOTOPMOST,
-                0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
             );
             // 强制将窗口带到前台
@@ -1044,7 +1048,9 @@ impl eframe::App for WcNoticeApp {
                         if name.is_empty() {
                             self.status_msg = "节点名称不能为空".to_string();
                         } else if let Some(schedule) = self.active_schedule_mut() {
-                            schedule.periods.push(Period::new(&normalized_time, kind, &name));
+                            schedule
+                                .periods
+                                .push(Period::new(&normalized_time, kind, &name));
                             schedule.sort_periods();
                             self.show_add_dialog = false;
                             self.mark_dirty("新节点已添加");

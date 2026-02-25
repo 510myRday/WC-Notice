@@ -231,7 +231,7 @@ impl TrayThreadState {
         log::info!("托盘消息泵线程启动");
         unsafe {
             use windows_sys::Win32::UI::WindowsAndMessaging::{
-                DispatchMessageW, GetMessageW, TranslateMessage, MSG,
+                DispatchMessageW, GetMessageW, MSG, TranslateMessage,
             };
             let mut msg: MSG = std::mem::zeroed();
             while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
