@@ -38,16 +38,26 @@ pub fn send_notification(title: &str, body: &str) {
     let title = title.to_string();
     let body = body.to_string();
     std::thread::spawn(move || {
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
+        #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
         {
             use notify_rust::Notification;
-            if let Err(e) = Notification::new()
+            // macOS 不需要 icon() 调用，否则某些版本会报错
+            #[cfg(target_os = "macos")]
+            let result = Notification::new()
+                .summary(&title)
+                .body(&body)
+                .timeout(notify_rust::Timeout::Milliseconds(5000))
+                .show();
+
+            #[cfg(not(target_os = "macos"))]
+            let result = Notification::new()
                 .summary(&title)
                 .body(&body)
                 .icon("dialog-information")
                 .timeout(notify_rust::Timeout::Milliseconds(5000))
-                .show()
-            {
+                .show();
+
+            if let Err(e) = result {
                 log::warn!("系统通知发送失败: {}", e);
             }
         }

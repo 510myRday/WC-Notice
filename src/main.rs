@@ -37,8 +37,85 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "WC Notice",
         native_options,
-        Box::new(move |_cc| Ok(Box::new(WcNoticeApp::new(Arc::clone(&engine), schedule)))),
+        Box::new(move |cc| {
+            // 加载中文字体，解决 Windows/macOS 中文乱码问题
+            setup_chinese_font(&cc.egui_ctx);
+            Ok(Box::new(WcNoticeApp::new(Arc::clone(&engine), schedule)))
+        }),
     )
+}
+
+/// 从系统字体路径加载中文字体并注册到 egui
+///
+/// 优先级：
+///   Windows  → 微软雅黑 (msyh.ttc)
+///   macOS    → 苹方 (PingFang.ttc) → 华文黑体 (STHeiti Medium.ttc)
+///   Linux    → Noto Sans CJK SC → WenQuanYi Micro Hei
+fn setup_chinese_font(ctx: &egui::Context) {
+    // 按平台列出候选字体路径
+    let candidates: &[&str] = {
+        #[cfg(target_os = "windows")]
+        {
+            &[
+                r"C:\Windows\Fonts\msyh.ttc",   // 微软雅黑
+                r"C:\Windows\Fonts\msyhbd.ttc",
+                r"C:\Windows\Fonts\simsun.ttc",  // 宋体 fallback
+            ]
+        }
+        #[cfg(target_os = "macos")]
+        {
+            &[
+                "/System/Library/Fonts/PingFang.ttc",               // 苹方
+                "/System/Library/Fonts/STHeiti Medium.ttc",         // 华文黑体
+                "/System/Library/Fonts/Supplemental/Arial Unicode MS.ttf",
+            ]
+        }
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        {
+            &[
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
+                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+                "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc",
+            ]
+        }
+    };
+
+    // 找到第一个可读的字体文件
+    let font_data = candidates.iter().find_map(|path| {
+        match std::fs::read(path) {
+            Ok(data) => {
+                log::info!("已加载系统中文字体: {}", path);
+                Some(data)
+            }
+            Err(_) => None,
+        }
+    });
+
+    let Some(font_data) = font_data else {
+        log::warn!("未找到系统中文字体，界面中文可能显示为方块");
+        return;
+    };
+
+    // 将字体注册进 egui 字体系统
+    let mut fonts = egui::FontDefinitions::default();
+    fonts.font_data.insert(
+        "chinese_sys".to_owned(),
+        egui::FontData::from_owned(font_data).into(),
+    );
+
+    // 将中文字体追加到 Proportional 和 Monospace 字族末尾
+    // （egui 会按顺序 fallback，先用内置拉丁字体，找不到字形再用中文字体）
+    for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
+        fonts
+            .families
+            .entry(family)
+            .or_default()
+            .push("chinese_sys".to_owned());
+    }
+
+    ctx.set_fonts(fonts);
+    log::info!("中文字体注册完成");
 }
 
 /// 加载应用图标（内嵌 PNG）

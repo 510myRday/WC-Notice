@@ -5,7 +5,7 @@
 - 按系统时间触发提醒
 - 支持上课/下课/课间操/午休/晚自习等节点
 - 桌面通知 + 响铃
-- 计划支持 Windows / Linux
+- 支持 Windows / macOS / Linux
 
 ## 功能
 
@@ -13,6 +13,7 @@
 - 每秒检测时间，分钟级触发
 - 防重复触发（同一分钟只提醒一次）
 - 本地配置持久化（`schedule.toml`）
+- 自动加载系统中文字体，界面无乱码
 
 ## 技术栈
 
@@ -28,18 +29,33 @@
 cargo run
 ```
 
-## Linux 依赖
+## 平台依赖
 
-在 Ubuntu / Debian 上建议先安装：
+### Windows
+
+无需额外安装依赖。中文界面自动使用系统微软雅黑字体。
+
+### macOS
+
+无需额外安装依赖。中文界面自动使用系统苹方字体。
+
+> macOS 需要在"系统偏好设置 → 通知"中允许应用发送通知。
+
+### Linux (Ubuntu / Debian)
 
 ```bash
 sudo apt update
 sudo apt install -y \
   libasound2-dev pkg-config libdbus-1-dev \
-  libxkbcommon-dev libwayland-dev libx11-dev
+  libxkbcommon-dev libwayland-dev libx11-dev \
+  libgtk-3-dev libglib2.0-dev libappindicator3-dev
 ```
 
 > 桌面通知依赖系统通知服务（DBus）。
+> 中文界面自动查找 Noto Sans CJK 或 WenQuanYi 字体，建议安装：
+> ```bash
+> sudo apt install -y fonts-noto-cjk
+> ```
 
 ## 资源文件
 
@@ -53,8 +69,9 @@ sudo apt install -y \
 
 ## 配置文件位置
 
-- Linux: `~/.config/wc_notice/schedule.toml`
 - Windows: `%APPDATA%\wc_notice\schedule.toml`
+- macOS:   `~/Library/Application Support/wc_notice/schedule.toml`
+- Linux:   `~/.config/wc_notice/schedule.toml`
 
 ## 开源与发布
 
@@ -71,8 +88,12 @@ git push origin v0.1.0
 
 GitHub Actions 会自动构建：
 
-- `wc_notice-x86_64-unknown-linux-gnu.tar.gz`
-- `wc_notice-x86_64-pc-windows-msvc.zip`
+- `wc_notice-x86_64-pc-windows-msvc.zip`        ← Windows x86_64
+- `wc_notice-x86_64-unknown-linux-gnu.tar.gz`   ← Linux x86_64
+- `wc_notice-aarch64-unknown-linux-gnu.tar.gz`  ← Linux ARM64（树莓派4/5、ARM 服务器）
+- `wc_notice-armv7-unknown-linux-gnueabihf.tar.gz` ← Linux ARMv7（树莓派2/3 32位）
+- `wc_notice-aarch64-apple-darwin.tar.gz`       ← macOS Apple Silicon（M1/M2/M3）
+- `wc_notice-x86_64-apple-darwin.tar.gz`        ← macOS Intel
 
 ## 计划
 
