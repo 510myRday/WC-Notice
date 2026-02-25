@@ -2,8 +2,8 @@
 name = "wc_notice"
 version = "0.1.0"
 edition = "2024"
-authors = ["Your Name <you@example.com>"]
-description = "程序员专用学校作息铃声提醒工具 - School Bell Reminder for Programmers"
+authors = ["510myRday <510myRday@bpiao.online>"]
+description = "铃声提醒工具 - Bell Reminder"
 license = "MIT"
 repository = "https://github.com/yourname/wc_notice"
 readme = "README.md"

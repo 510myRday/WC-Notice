@@ -74,7 +74,9 @@ jobs:
           sudo apt-get install -y \
             libasound2-dev pkg-config libdbus-1-dev \
             libxkbcommon-dev libwayland-dev libx11-dev \
-            libxrandr-dev libxi-dev libxcursor-dev
+            libxrandr-dev libxi-dev libxcursor-dev \
+            libgtk-3-dev libglib2.0-dev libappindicator3-dev \
+            libxdo-dev
 
       # ARM 交叉编译：安装 cross 工具（内部用 Docker 跑对应 sysroot）
       - name: Install cross (ARM cross-compile)
